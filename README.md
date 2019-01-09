@@ -13,6 +13,9 @@ Command|Description
 **fixv** | A command line FIX message viewer useful for analysing raw messages and log files
 
 ### TODO
+* add functionality to filter (from and/or to) by MsgSeqNum
+* add functionality to filter (from and/or to) by SendingTime
+* amy other filters ??
 * support config _(~/.fixv)_ to explicit set the different colors
  
 ### Links
