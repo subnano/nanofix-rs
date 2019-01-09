@@ -1,0 +1,30 @@
+[package]
+name = "nanofix-rs"
+version = "0.1.0"
+edition = "2018"
+authors = ["Mark Wardell <mark@subnano.net>"]
+homepage = "https://github.com/subnano/nanofix-rs"
+repository = "https://github.com/subnano/fix-rs"
+readme = "README.md"
+license = "LICENSE-MIT"
+publish = false
+autobins = false
+
+[dependencies]
+clap = "2.32.0"
+failure = "0.1.5"
+termcolor = "1.0.4"
+colored = "1.6.1"
+
+[profile.dev]
+opt-level = 1
+codegen-units = 5
+
+[profile.release]
+panic = "abort"
+lto = true
+codegen-units = 1
+
+[[bin]]
+name = "fixv"
+path = "src/fixv.rs"
