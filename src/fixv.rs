@@ -1,15 +1,23 @@
-use nanofix_rs::fix_parser;
-use nanofix_rs::fix_parser::{TagValue, Consumer, ConsumerError};
+use std::alloc::System;
+#[global_allocator]
+static A: System = System;
+
+use std::fs::File;
 use std::io;
+use std::io::{BufRead, BufReader, Write};
 use std::process::exit;
 use std::str;
-use std::fs::File;
-use std::io::{BufReader, BufRead, Write};
-use clap::{Arg, app_from_crate, crate_authors, crate_description, crate_name, crate_version};
+
+use clap::{App, Arg, crate_authors, crate_version};
 use colored::*;
 
+use nanofix_rs::fix_parser;
+use nanofix_rs::fix_parser::{Consumer, ConsumerError, TagValue};
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 struct TagValueConsumerWriter {
-    tags: Vec<u32>,
+    highlight_tags: Vec<u32>,
+    exclude_msg_types: Vec<u8>,
 }
 
 impl<'a> Consumer<TagValue<'a>> for TagValueConsumerWriter {
@@ -20,7 +28,7 @@ impl<'a> Consumer<TagValue<'a>> for TagValueConsumerWriter {
         let tag_value = str::from_utf8(buffer_slice).unwrap();
         write!(stdout, "{}", tag_str.bright_blue())?;
         write!(stdout, "{}", "=".white())?;
-        if self.tags.contains(&tv.tag) {
+        if self.highlight_tags.contains(&tv.tag) {
             write!(stdout, "{}", tag_value.bright_red())?;
         } else {
             write!(stdout, "{}", tag_value.green())?;
@@ -31,13 +39,27 @@ impl<'a> Consumer<TagValue<'a>> for TagValueConsumerWriter {
 }
 
 fn main() {
-    let arg_matches = app_from_crate!()
+    //let arg_matches = app_from_crate!()
+    let arg_matches = App::new("fixv")
+        .version(crate_version!())
+        .author(crate_authors!())
+        .about("FIX protocol log file viewer")
         .arg(Arg::with_name("tags")
             .short("t")
             .long("tags")
+            .require_equals(true)
+            .takes_value(true)
             .value_name("tags")
-            .help("Highlight individual tags")
-            .takes_value(true))
+            .help("Highlight individual tags"))
+        .arg(Arg::with_name("exclude")
+            .short("x")
+            .long("exclude")
+            .multiple(true)
+            .require_equals(true)
+            .takes_value(true)
+            .default_value("Heartbeat")
+            .value_name("msg types")
+            .help("MsgTypes to exclude"))
         .arg(Arg::with_name("source")
             .index(1)
             .help("Source file name or omit to read from stdin"))
@@ -46,10 +68,14 @@ fn main() {
     // Source of data to be read
     let path = arg_matches.value_of("source").unwrap_or("-");
 
+    // Construct MsgType exclusion policy
+    let exclude_value = arg_matches.value_of("exclude").unwrap_or("0");
+    let exclude_list: Vec<u8> = exclude_value.split(',').map(|x| x.as_bytes()[0]).collect();
+
     // Determine which tags are to be highlighted
     let tags_value = arg_matches.value_of("tags").unwrap_or("49,56");
     let tags: Vec<u32> = tags_value.split(",").map(|x| x.parse::<u32>().unwrap()).collect();
-    let tv_consumer = TagValueConsumerWriter {tags};
+    let tv_consumer = TagValueConsumerWriter { highlight_tags: tags, exclude_msg_types: exclude_list };
 
     match parse(path, tv_consumer) {
         Ok(()) => {
@@ -93,15 +119,37 @@ fn parse_file(path: &str, tv_consumer: TagValueConsumerWriter) -> Result<(), std
 }
 
 fn parse_line(line: &String, tv_consumer: &TagValueConsumerWriter) {
-// find start of FIX message
+    // find start of FIX message
+    // TODO improve MsgType exclusion logic to avoid extra buffer iteration
+    // by delaying output until MsgType has been determined
     match line.find("8=FIX") {
         None => {}
         Some(start_offset) => {
             let msg = &line.as_bytes()[start_offset..];
-            match fix_parser::iterate_tags(msg, tv_consumer) {
-                Ok(_) => writeln!(io::stdout()).unwrap_or_default(),
-                _ => () // ignore FIX parser errors
+            let mut should_display = tv_consumer.exclude_msg_types.len() == 0;
+
+            // See if msg type exclusion policy should be activated
+            if tv_consumer.exclude_msg_types.len() > 0 {
+                let offset = find_subsequence(msg, "35=".as_bytes());
+                if offset != std::usize::MAX {
+                    let msg_type = msg[offset+3];
+                    should_display = !(tv_consumer.exclude_msg_types.contains(&msg_type));
+                }
+            }
+            // Go ahead and parse the message if policy dictates
+            if should_display {
+                match fix_parser::iterate_tags(msg, tv_consumer) {
+                    Ok(_) => writeln!(io::stdout()).unwrap_or_default(),
+                    _ => () // ignore FIX parser errors
+                }
             }
         }
     };
+}
+
+/// Finds the given sequence withing the provided array of bytes
+fn find_subsequence(bytes:&[u8], sequence:&[u8]) -> usize {
+    bytes.windows(sequence.len())
+        .position(|w| w == sequence)
+        .unwrap_or(std::usize::MAX)
 }

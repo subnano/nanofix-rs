@@ -17,7 +17,8 @@ Command|Description
 * add functionality to filter (from and/or to) by SendingTime
 * amy other filters ??
 * support config _(~/.fixv)_ to explicit set the different colors
- 
+* add support for excluding multi-byte MsgTypes
+  
 ### Links
 - [FIX Trading Community](https://www.fixtrading.org/) 
 - [Wikipedia](https://en.wikipedia.org/wiki/Financial_Information_eXchange)
