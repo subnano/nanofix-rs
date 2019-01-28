@@ -12,6 +12,13 @@ Command|Description
 :---|:---|
 **fixv** | A command line FIX message viewer useful for analysing raw messages and log files
 
+## FIX Viewer
+### Downloading
+To download the program, type the following command:
+
+
+```curl -L -o fixv.zip https://github.com/subnano/nanofix-rs/releases/download/0.1.1/fixv.zip && unzip fixv.zip -d ~/bin && rm fixv.zip```
+
 ### TODO
 * add functionality to filter (from and/or to) by MsgSeqNum
 * add functionality to filter (from and/or to) by SendingTime
