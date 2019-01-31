@@ -7,6 +7,9 @@
 //#[global_allocator]
 //static A: System = System;
 
+mod fix_parser;
+mod protocol;
+
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader, Write};
@@ -16,8 +19,8 @@ use std::str;
 use clap::{App, Arg, crate_authors, crate_version};
 use colored::*;
 
-use fixv::fix_parser;
-use fixv::fix_parser::{Consumer, ConsumerError, TagValue};
+//use fix_parser;
+use crate::fix_parser::{Consumer, ConsumerError, TagValue};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct TagValueConsumerWriter {
@@ -62,7 +65,7 @@ fn main() {
             .multiple(true)
             .require_equals(true)
             .takes_value(true)
-            .default_value("Heartbeat")
+            .default_value("0 'Heartbeat'")
             .value_name("msg types")
             .help("MsgTypes to exclude"))
         .arg(Arg::with_name("source")

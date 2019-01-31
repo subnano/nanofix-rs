@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::protocol::{FixMessage, ProtocolError};
 
 /// The absolute minimum length of a FIX message. 8=FIX.4.x|9=nn|35=x|10=nnn|
