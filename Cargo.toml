@@ -1,38 +1,5 @@
-[package]
-name = "nanofix-rs"
-version = "0.1.1"
-edition = "2018"
-authors = ["Mark Wardell <mark@subnano.net>"]
-homepage = "https://github.com/subnano/nanofix-rs"
-repository = "https://github.com/subnano/nanofix-rs"
-readme = "README.md"
-license = "MIT"
-publish = false
-autobins = false
-
-[dependencies]
-clap = "2.32.0"
-colored = "1.6.1"
-env_logger = "0.6.0"
-log = "0.4.6"
-tokio = "0.1.14"
-mio = "0.6.16"
-
-[profile.dev]
-opt-level = 1
-codegen-units = 5
-
-[profile.release]
-panic = "abort"
-lto = true
-codegen-units = 1
-opt-level = 3
-debug = false
-
-[[bin]]
-name = "fixv"
-path = "src/fixv.rs"
-
-[[bin]]
-name = "nanofix"
-path = "src/nano_client.rs"
+[workspace]
+members = [
+    "fixv",
+    "fixclient",
+]

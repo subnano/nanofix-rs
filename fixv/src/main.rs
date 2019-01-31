@@ -1,6 +1,11 @@
-use std::alloc::System;
-#[global_allocator]
-static A: System = System;
+// externs
+//pub mod fix_parser;
+//pub mod protocol;
+
+// System allocator default from 1.32
+//use std::alloc::System;
+//#[global_allocator]
+//static A: System = System;
 
 use std::fs::File;
 use std::io;
@@ -11,8 +16,8 @@ use std::str;
 use clap::{App, Arg, crate_authors, crate_version};
 use colored::*;
 
-use nanofix_rs::fix_parser;
-use nanofix_rs::fix_parser::{Consumer, ConsumerError, TagValue};
+use fixv::fix_parser;
+use fixv::fix_parser::{Consumer, ConsumerError, TagValue};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct TagValueConsumerWriter {
