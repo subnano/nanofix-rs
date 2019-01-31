@@ -65,7 +65,7 @@ fn main() {
             .multiple(true)
             .require_equals(true)
             .takes_value(true)
-            .default_value("0 'Heartbeat'")
+            .default_value("0")
             .value_name("msg types")
             .help("MsgTypes to exclude"))
         .arg(Arg::with_name("source")
