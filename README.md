@@ -38,19 +38,19 @@ Sub crates:
 
 ## License
 
-This project is licensed under either of
-
- * Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or
-   http://www.apache.org/licenses/LICENSE-2.0)
- * MIT license ([LICENSE-MIT](LICENSE-MIT) or
-   http://opensource.org/licenses/MIT)
-
 ## TODO
-* `fixv` - add functionality to filter (from and/or to) by MsgSeqNum
-* `fixv` - add functionality to filter (from and/or to) by SendingTime
-* `fixv` - support config _(~/.fixv)_ to persist application arguments
-* `fixv` - add support for excluding multi-byte MsgTypes
-
+* add functionality to filter (from and/or to) by MsgSeqNum
+* add functionality to filter (from and/or to) by SendingTime
+* amy other filters ??
+* support config _(~/.fixv)_ to explicit set the different colors
+* add support for excluding multi-byte MsgTypes
+  
 ## Links
 - [FIX Trading Community](https://www.fixtrading.org/) 
 - [FIX on Wikipedia](https://en.wikipedia.org/wiki/Financial_Information_eXchange)
+
+### Downloading Programs
+For example, to download the FIX Viewer program, type the following command:
+
+```curl -L -o fixv.zip https://github.com/subnano/nanofix-rs/releases/download/0.1.1/fixv.zip && unzip fixv.zip -d ~/bin && rm fixv.zip```
+
