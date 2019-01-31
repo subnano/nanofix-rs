@@ -18,6 +18,6 @@ script:
   - cargo test --verbose --all
   #- cargo test --all --all-features --release
 
-#notifications:
-#  email:
-#    on_success: never
+notifications:
+  email:
+    on_success: never
