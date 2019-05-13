@@ -1,5 +1,10 @@
 #![allow(dead_code)]
 use crate::protocol::{FixMessage, ProtocolError};
+use std::io;
+use std::io::Write;
+use std::str;
+use colored::*;
+use crate::FixViewData;
 
 /// The absolute minimum length of a FIX message. 8=FIX.4.x|9=nn|35=x|10=nnn|
 const MIN_MESSAGE_LEN: usize = 27;
@@ -25,10 +30,6 @@ pub struct TagValue<'a> {
 }
 
 pub struct ConsumerError;
-
-pub trait Consumer<T> {
-    fn accept(&self, arg: T) -> Result<(), ConsumerError>;
-}
 
 impl From<std::io::Error> for ConsumerError {
     fn from(_err: std::io::Error) -> ConsumerError {
@@ -70,15 +71,32 @@ pub fn read_tag(msg: &[u8], offset: usize) -> Result<TagValue, ProtocolError> {
     Ok(TagValue { tag: num, offset: value_offset, length: index - value_offset, buffer: msg })
 }
 
-pub fn iterate_tags<'a>(msg: &'a [u8], consumer: &'a Consumer<TagValue<'a>>) -> Result<FixMessage, ProtocolError> {
-    let mut offset = 0;
+pub fn iterate_tags<'a>(msg: &'a [u8], start_offset: usize, fv_data: &'a FixViewData) -> Result<FixMessage, ProtocolError> {
+    let stdout = io::stdout();
+    let mut stdout_lock = stdout.lock();
+    let mut offset = start_offset;
+
+    let preamble = str::from_utf8(&msg[0..start_offset]).unwrap();
+    write!(stdout_lock, "{}", preamble)?;
+
     while offset < msg.len() {
         match read_tag(&msg, offset) {
-            Ok(tag) => {
-                offset = tag.offset + tag.length + 1;
-                if let Err(_err) = consumer.accept(tag) {
-                    break
+            Ok(tv) => {
+                offset = tv.offset + tv.length + 1;
+
+                // Write the tags
+                let tag_str = tv.tag.to_string();
+                let buffer_slice: &[u8] = &tv.buffer[tv.offset..tv.offset + tv.length];
+                let tag_value = str::from_utf8(buffer_slice).unwrap();
+                write!(stdout_lock, "{}", tag_str.bright_blue())?;
+                write!(stdout_lock, "{}", "=".white())?;
+                if fv_data.highlight_tags.contains(&tv.tag) {
+                    write!(stdout_lock, "{}", tag_value.bright_red())?;
+                } else {
+                    write!(stdout_lock, "{}", tag_value.green())?;
                 }
+                write!(stdout_lock, "{}", "|".white())?;
+
             },
             Err(e) => return Err(e),
         }
@@ -105,14 +123,8 @@ mod tests {
     use super::iterate_tags;
     use super::parse;
     use super::TagValue;
-
-    struct NullTagValueConsumer;
-
-    impl<'a> Consumer<TagValue<'a>> for NullTagValueConsumer {
-        fn accept(&self, _arg: TagValue) -> Result<(), ConsumerError>{
-            Ok(())
-        }
-    }
+    use std::io::StdoutLock;
+    use crate::FixViewData;
 
     #[test]
     fn parse_failures() {
@@ -121,7 +133,7 @@ mod tests {
 
     #[test]
     fn iterate_tags_failures() {
-        let null_consumer = NullTagValueConsumer {};
+        let null_consumer = FixViewData {highlight_tags: [], exclude_msg_types: []};
         assert_eq!(iterate_tags(b"3=abc\x014=", &null_consumer), Err(ProtocolError::Malformed));
         assert_eq!(iterate_tags(b"3=xyz=\x01", &null_consumer), Err(ProtocolError::Malformed));
         assert_eq!(iterate_tags(b"2=FIX.4.4", &null_consumer), Err(ProtocolError::MissingDelimiter));

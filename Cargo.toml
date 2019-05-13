@@ -1,5 +1,18 @@
 [workspace]
 members = [
+    "message",
     "fixv",
-    "fixclient",
+    "fix-client",
 ]
+
+[profile.dev]
+opt-level = 1
+codegen-units = 5
+
+[profile.release]
+panic = "abort"
+lto = true
+codegen-units = 1
+opt-level = 3
+debug = false
+

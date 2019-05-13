@@ -1,6 +1,6 @@
 [package]
-name = "fixv"
-version = "0.1.2"
+name = "nanofix_message"
+version = "0.1.0"
 edition = "2018"
 authors = ["Mark Wardell <mark@submicro.net>"]
 homepage = "https://github.com/subnano/nanofix-rs"
@@ -11,8 +11,5 @@ keywords = ["io", "network", "fix"]
 publish = false
 
 [dependencies]
-atty = "0.2"
-clap = "2.32.0"
-colored = "1.6.1"
-env_logger = "0.6.0"
 log = "0.4.6"
+

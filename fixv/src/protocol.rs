@@ -16,7 +16,8 @@ pub enum ProtocolError {
     MissingChecksum,
     InvalidVersion,
     InvalidBodyLen,
-    InvalidChecksum
+    InvalidChecksum,
+    IoError(String)
 }
 
 impl ProtocolError {
@@ -27,6 +28,15 @@ impl ProtocolError {
             ProtocolError::MissingDelimiter => "Missing delimiter",
             _ => "FIX protocol error",
         }
+    }
+//    fn from(err: std::io::Error) -> ProtocolError {
+//        ProtocolError::IoError(err)
+//    }
+}
+
+impl From<std::io::Error> for ProtocolError {
+    fn from(err: std::io::Error) -> ProtocolError {
+        ProtocolError::IoError(err.to_string())
     }
 }
 

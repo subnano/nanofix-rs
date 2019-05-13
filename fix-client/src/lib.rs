@@ -1,5 +1,5 @@
-#[macro_use]
-extern crate log;
+#![allow(dead_code)]
+
 //
 ////use {localhost, TryRead, TryWrite};
 ////use mio::{Events, Poll, Ready, PollOpt, Token};
@@ -8,30 +8,67 @@ extern crate log;
 //use std::io::{Error, ErrorKind, Result};
 //use std::net::{Shutdown, SocketAddr};
 //
-//use tokio::net::TcpStream;
-//
 ////const CLIENT_TOKEN: Token = Token(100);
 //
-//#[derive(PartialEq)]
-//enum SessionState {
-//    Disconnected,
-//    Connected,
-//    LogonSent,
-//    LogonReceived,
-//    LoggedOn,
-//    LogoutSent,
-//    LogoutReceived,
-//    LoggedOut,
+
+use std::io::{self, Result, Write};
+use std::net::{SocketAddr, TcpStream};
+
+//use futures::{Future, Poll};
+//use tokio::net::tcp::{ConnectFuture as TokioConnectFuture, TcpStream};
+//use tokio_io::io::WriteHalf;
+
+enum SessionState {
+    Disconnected,
+    Connecting(FixClient),
+    Connected,
+    LogonSent,
+    LogonReceived,
+    LoggedOn,
+    LogoutSent,
+    LogoutReceived,
+    LoggedOut,
+//    Error(io::Error),
+}
+
+#[allow(dead_code)]
+#[derive(Debug)]
+pub struct FixClient {
+    socket: TcpStream
+}
+
+impl FixClient {
+    pub fn connect(addr: SocketAddr) -> io::Result<FixClient> {
+        let stream = TcpStream::connect(&addr)?;
+        Ok(FixClient{
+            socket: stream
+        })
+    }
+
+    pub fn write(&mut self, buf: &[u8]) -> Result<usize> {
+        let bytes_written = self.socket.write(buf)?;
+        Ok(bytes_written)
+    }
+}
+
+
+//pub fn connect(addr: &SocketAddr) -> ConnectFuture {
+//    let inner = TcpStream::connect(&addr).and_then(|stream| {
+//        println!("Connected to {}", stream);
+//        //ConnectFutureState::Connecting(FixClient {stream})
+//    })
+//    .map_err(|err| {
+//        println!("Connection error = {:?}", err);
+//        ConnectFutureState::Error(err)
+//    });
+//        let state = match mio::net::TcpStream::connect(addr) {
+//        Ok(tcp) => Waiting(TcpStream::new(tcp)),
+//        Err(e) => Error(e),
+//    };
+//    ConnectFuture { inner }
 //}
-//
-//#[allow(dead_code)]
-//struct NanoFixClient {
-//    address: SocketAddr,
-//    socket: TcpStream,
-//    state: SessionState,
-//}
-//
-//impl NanoFixClient {
+
+    //impl NanoFixClient {
 //    fn connect(url: &str) -> Result<NanoFixClient> {
 //        match url.parse() {
 //            Ok(addr) => {
@@ -94,42 +131,3 @@ extern crate log;
 //    }
 //}
 //
-fn main() {
-    env_logger::init();
-    info!("Starting nanofix client ..");
-//    let mut client = NanoFixClient::connect("10.0.13.255:18099").unwrap();
-//    match run_client(&mut client) {
-//        Ok(()) => {}
-//        Err(err) => warn!("Unable to run: {:?}", err)
-//    }
-}
-//
-//fn run_client(client: &mut NanoFixClient) -> Result<()> {
-//
-//    // Construct a new `Poll` handle as well as the `Events` we'll store into
-//    let mut poll = Poll::new()?;
-//    let mut events = Events::with_capacity(1024);
-//
-//    // Register the stream with `Poll`
-//    poll.register(&client.socket, CLIENT_TOKEN, Ready::readable() | Ready::writable(), PollOpt::edge())?;
-//
-//
-//    // Wait for the socket to become ready.
-//    // This has to happens in a loop to handle spurious wakeups.
-//    while client.state == SessionState::Connected {
-//        poll.poll(&mut events, None)?;
-//
-//        for event in &events {
-//            debug!("event {:?}", event);
-//
-//            // The socket connected (probably, it could still be a spurious wakeup)
-//            if event.token() == CLIENT_TOKEN && event.readiness().is_writable() {
-//                info!("Connected to '{}'", client.address);
-//                client.write(&mut poll).unwrap();
-//            }
-//        }
-//    }
-//
-//    client.disconnect()?;
-//    Ok(())
-//}
