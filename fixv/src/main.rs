@@ -7,22 +7,25 @@
 //#[global_allocator]
 //static A: System = System;
 
-mod fix_parser;
-mod protocol;
-
+use std::env;
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader, Write};
+use std::iter::FromIterator;
 use std::process::exit;
-use std::env;
 use std::str;
+
 use atty::Stream;
-use clap::{App, Arg, crate_authors, crate_version, AppSettings};
+use clap::{App, AppSettings, Arg, crate_authors, crate_version};
+
+mod fix_parser;
+mod protocol;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FixViewData {
     highlight_tags: Vec<u32>,
     exclude_msg_types: Vec<u8>,
+    include_filter: Vec<Vec<u8>>,
 }
 
 //impl<'a> Consumer<&mut &StdoutLock<'a>, TagValue<'a>> for FixViewData {
@@ -63,30 +66,54 @@ fn main() {
             .require_equals(true)
             .takes_value(true)
             .default_value("0")
-            .value_name("msg types")
+            .value_name("exclude")
             .help("MsgTypes to exclude"))
+        .arg(Arg::with_name("include")
+            .short("i")
+            .long("include")
+            .multiple(true)
+            .takes_value(true)
+            .value_name("include")
+            .help("Include filters"))
         .arg(Arg::with_name("source")
             .index(1)
             .help("Source file name or omit to read from stdin"));
-    //let arg_matches = app.get_matches();
+
+    // Weird behaviour, get_matches consumes app so need to borrow it in order to print help
     let arg_matches = app.get_matches_from_safe_borrow(env::args_os())
         .unwrap_or_else(|e| e.exit());
 
+    // Display help if file not specified and stdin is a tty (i.e. not piped)
+//    if !arg_matches.is_present("source") && atty::is(Stream::Stdin) {
+//        let _ = app.print_help();
+//        exit(0)
+//    }
+
     // Source of data to be read
-    if !arg_matches.is_present("source") && atty::is(Stream::Stdin) {
-        let _ = app.print_help();
-        exit(0)
-    }
     let path = arg_matches.value_of("source").unwrap_or("-");
 
     // Construct MsgType exclusion policy
     let exclude_value = arg_matches.value_of("exclude").unwrap_or("0");
     let exclude_list: Vec<u8> = exclude_value.split(',').map(|x| x.as_bytes()[0]).collect();
 
+    // Construct inclusion filter
+    let include_values: Vec<&str> = arg_matches.values_of("include").unwrap_or_default().collect();
+//    let include_list: Vec<u8> = include_values.iter()
+//        .map(|x| x.as_bytes().to_vec())
+//        .cloned()
+//        .collect();
+    let include_list: Vec<Vec<u8>> = Vec::from_iter(include_values.iter()
+        .map(|x| x.as_bytes().to_vec()));
+println!("{:?}", include_list);
+
     // Determine which tags are to be highlighted
     let tags_value = arg_matches.value_of("tags").unwrap_or("49,56");
     let tags: Vec<u32> = tags_value.split(",").map(|x| x.parse::<u32>().unwrap()).collect();
-    let fv_data = FixViewData { highlight_tags: tags, exclude_msg_types: exclude_list };
+    let fv_data = FixViewData {
+        highlight_tags: tags,
+        exclude_msg_types: exclude_list,
+        include_filter: include_list
+    };
 
     match parse(path, fv_data) {
         Ok(()) => {
